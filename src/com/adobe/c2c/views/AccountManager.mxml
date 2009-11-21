@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" creationComplete="onCreationComplete();">
+
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.c2c.events.P2PInitConnectionEvent;
+			import com.adobe.c2c.events.CloseConnectionsEvent;
+		
+			import mx.events.ItemClickEvent;
+			import com.adobe.c2c.model.ModelLocator;
+			import mx.events.PropertyChangeEvent;
+			import mx.binding.utils.ChangeWatcher;
+			import com.adobe.air.preferences.Preference;
+			import com.adobe.c2c.events.XMPPRegisterEvent;
+			import com.adobe.c2c.events.XMPPInitConnectionEvent;
+
+			private function onCreationComplete():void
+			{
+				ChangeWatcher.watch(ModelLocator.getInstance(), "showAccountDrawer", onShowChange);
+			}
+
+			private function onShowChange(e:PropertyChangeEvent):void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				if (ml.showAccountDrawer)
+				{
+					this.getAccountData();
+					if (ml.preferences.getValue("username") && ml.preferences.getValue("password"))
+					{
+						forgetInfoButton.enabled = true;
+					}
+					else
+					{
+						forgetInfoButton.enabled = false;
+					}
+					
+					if (ml.xmppConnection != null && ml.xmppConnection.isLoggedIn())
+					{
+						signOutButton.enabled = true;
+						deleteAccountButton.enabled = true;
+					}
+					else
+					{
+						signOutButton.enabled = false;
+						deleteAccountButton.enabled = false;
+					}
+				}
+			}
+
+			private function getAccountData():void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				var prefs:Preference = ml.preferences;
+				var savedUsername:String = prefs.getValue("username");
+				var savedPassword:String = prefs.getValue("password");
+				if (savedUsername) loginUsernameInput.text = savedUsername;
+				if (savedPassword) loginPasswordInput.text = savedPassword;
+			}
+
+			private function onChangeState(e:ItemClickEvent):void
+			{
+				if (e.index == 0)
+				{
+					view.selectedChild = loginForm;
+					loginUsernameInput.setFocus();
+				}
+				else if (e.index == 1)
+				{
+					view.selectedChild = registrationForm;
+					registrationUsernameInput.setFocus();
+				}
+				else
+				{
+					view.selectedChild = advancedForm;
+				}
+			}
+			
+			private function onSignIn():void
+			{
+				this.saveCredentials(loginUsernameInput.text, loginPasswordInput.text);
+				new P2PInitConnectionEvent().dispatch();
+			}
+
+			private function onRegister():void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				this.saveCredentials(registrationUsernameInput.text, registrationPasswordInput.text);
+
+				ml.registrationPending = true;
+				new P2PInitConnectionEvent().dispatch();
+
+				this.registrationUsernameInput.text = "";
+				this.registrationPasswordInput.text = "";
+				this.registrationPasswordConfirmationInput.text = "";
+			}
+
+			private function onSignOut():void
+			{
+				new CloseConnectionsEvent().dispatch();
+				ModelLocator.getInstance().showAccountDrawer = false;
+			}
+
+			private function onForgetInfo():void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				ml.preferences.deleteValue("username");
+				ml.preferences.deleteValue("password");
+				ml.preferences.save();
+				loginUsernameInput.text = "";
+				loginPasswordInput.text = "";
+				registrationUsernameInput.text = "";
+				registrationPasswordInput.text = "";
+				ModelLocator.getInstance().showAccountDrawer = false;
+			}
+
+			private function onDeleteAccount():void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				ml.xmppConnection.removeRegistration();
+				this.onForgetInfo();
+				this.onSignOut();
+			}
+			
+			private function saveCredentials(username:String, password:String):void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				var prefs:Preference = ml.preferences;
+				prefs.setValue("username", username, false);				
+				prefs.setValue("password", password, true);
+				prefs.save();
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:VBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" paddingTop="4" paddingBottom="4">
+		<mx:ButtonBar id="buttonBar" itemClick="onChangeState(event);">
+			<mx:dataProvider>
+				<mx:Array>
+					<mx:String>Sign In</mx:String>
+					<mx:String>Register</mx:String>
+					<mx:String>Advanced</mx:String>
+				</mx:Array>
+			</mx:dataProvider>
+		</mx:ButtonBar>
+		<mx:HRule width="90%"/>
+		<mx:ViewStack id="view" width="100%" height="100%" creationPolicy="all">
+			<mx:VBox id="loginForm" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+				<mx:Form>
+					<mx:FormItem label="Username">
+						<mx:TextInput id="loginUsernameInput" width="200"/>
+					</mx:FormItem>
+					<mx:FormItem label="Password">
+						<mx:TextInput id="loginPasswordInput" displayAsPassword="true" width="200"/>
+					</mx:FormItem>
+				</mx:Form>
+				<mx:Button label="Sign In" click="onSignIn();" enabled="{(loginUsernameInput.text.length &gt; 0 &amp;&amp; loginPasswordInput.text.length &gt; 0) ? true : false}"/>
+			</mx:VBox>
+			<mx:VBox id="registrationForm" width="100%" height="100%" horizontalAlign="center">
+				<mx:Form>
+					<mx:FormItem label="Username">
+						<mx:TextInput id="registrationUsernameInput" width="200"/>
+					</mx:FormItem>
+					<mx:FormItem label="Password">
+						<mx:TextInput id="registrationPasswordInput" displayAsPassword="true" width="200"/>
+					</mx:FormItem>
+					<mx:FormItem label="Password Again">
+						<mx:TextInput id="registrationPasswordConfirmationInput" displayAsPassword="true" width="200"/>
+					</mx:FormItem>
+				</mx:Form>
+				<mx:Button id="registerButton" label="Register" click="onRegister();" enabled="{(registrationUsernameInput.text.length &gt; 0 &amp;&amp; registrationPasswordInput.text.length &gt; 0 &amp;&amp; registrationPasswordConfirmationInput.text.length &gt; 0 &amp;&amp; registrationPasswordInput.text == registrationPasswordConfirmationInput.text) ? true : false}"/>
+			</mx:VBox>
+			<mx:VBox id="advancedForm" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+				<mx:Button label="Sign Out" id="signOutButton" click="onSignOut();" width="200"/>
+				<mx:Button label="Forget Account Info" id="forgetInfoButton" click="onForgetInfo();" width="200"/>
+				<mx:Button label="Delete Account" id="deleteAccountButton" click="onDeleteAccount();" width="200"/>
+			</mx:VBox>
+		</mx:ViewStack>
+		<mx:HRule width="90%"/>
+		<mx:HBox width="100%" horizontalAlign="right" paddingRight="4">
+			<mx:Button id="cancelButton" label="Cancel" click="ModelLocator.getInstance().showAccountDrawer = false;"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

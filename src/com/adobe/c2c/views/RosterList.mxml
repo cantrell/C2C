@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:List xmlns:mx="http://www.adobe.com/2006/mxml"
+		 rightClick="onRosterRightClick(event);"
+		 creationComplete="onCreationComplete();">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			import org.jivesoftware.xiff.data.XMPPStanza;
+			import org.jivesoftware.xiff.data.IQ;
+			import org.jivesoftware.xiff.core.JID;
+			import com.adobe.c2c.model.ModelLocator;
+			import com.adobe.c2c.vo.OutgoingItem;
+			import org.jivesoftware.xiff.data.im.RosterItemVO;
+			import com.adobe.c2c.events.XMPPRemoveContactEvent;
+		
+			import mx.controls.Alert;
+		
+			import flash.display.NativeMenu;
+			import flash.display.NativeMenuItem;
+			import flash.display.BitmapData;
+		
+			private var rosterMenu:NativeMenu;
+			private var pasteItem:NativeMenuItem;
+			private var fileItem:NativeMenuItem;
+			private var textItem:NativeMenuItem;
+			private var imageItem:NativeMenuItem;
+		
+			private function onCreationComplete():void
+			{
+				this.rosterMenu = new NativeMenu();
+				
+				this.pasteItem = new NativeMenuItem("Paste");
+				rosterMenu.addItem(pasteItem);
+				
+				pasteItem.submenu = new NativeMenu();
+				
+				this.fileItem = new NativeMenuItem("Files");
+				pasteItem.submenu.addItem(fileItem);
+
+				this.textItem = new NativeMenuItem("Text");
+				this.textItem.name = "text";
+				this.textItem.addEventListener(Event.SELECT, onPaste);
+				pasteItem.submenu.addItem(textItem);
+
+				this.imageItem = new NativeMenuItem("Image");
+				this.imageItem.name = "image";
+				this.imageItem.addEventListener(Event.SELECT, onPaste);
+				pasteItem.submenu.addItem(imageItem);
+				
+				var removeContact:NativeMenuItem = new NativeMenuItem("Delete");
+				removeContact.addEventListener(Event.SELECT, onConfirmDelete);
+				rosterMenu.addItem(removeContact);
+			}
+
+			private function onConfirmDelete(e:Event):void
+			{
+				Alert.show("Are you sure you want to remove " + selectedItem.displayName + " from your contact list?",
+						   "Confirmation",
+							Alert.YES|Alert.NO,
+							null,
+							function(e:CloseEvent):void
+							{
+								if (e.detail == Alert.YES)
+								{
+									var ee:XMPPRemoveContactEvent = new XMPPRemoveContactEvent();
+									ee.rosterItem = selectedItem as RosterItemVO;
+									ee.dispatch();
+								}
+							});
+			}
+
+			private function onRosterRightClick(e:MouseEvent):void
+			{
+				if (!e.target.parent.hasOwnProperty("data")) return;
+				var item:Object = e.target.parent.data;
+				if (item == null) return;
+				
+				this.selectedItem = item;
+
+				var cb:Clipboard = Clipboard.generalClipboard;
+				
+				var rosterItem:RosterItemVO = this.selectedItem as RosterItemVO;
+				this.pasteItem.enabled = rosterItem.pasteable;
+
+				this.textItem.enabled = cb.hasFormat(ClipboardFormats.TEXT_FORMAT);
+				this.textItem.data = cb.getData(ClipboardFormats.TEXT_FORMAT);
+				
+				this.imageItem.enabled = cb.hasFormat(ClipboardFormats.BITMAP_FORMAT);
+				this.imageItem.data = cb.getData(ClipboardFormats.BITMAP_FORMAT);
+				
+				this.fileItem.enabled = cb.hasFormat(ClipboardFormats.FILE_LIST_FORMAT);
+
+				if (cb.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
+				{
+					var fileSubMenu:NativeMenu = new NativeMenu();
+					for each (var f:File in cb.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array)
+					{
+						var fi:NativeMenuItem = new NativeMenuItem(f.name);
+						fi.name = "file";
+						fi.data = f;
+						fi.addEventListener(Event.SELECT, onPaste);
+						fileSubMenu.addItem(fi);
+					}
+					this.fileItem.submenu = fileSubMenu;
+				}
+
+				this.rosterMenu.display(this.stage, e.stageX, e.stageY);
+			}
+
+			private function onPaste(e:Event):void
+			{
+				var nmi:NativeMenuItem = e.target as NativeMenuItem;
+				var outgoingItem:OutgoingItem;
+
+				if (nmi.name == "text")
+				{
+					outgoingItem = new OutgoingItem(OutgoingItem.TEXT, this.selectedItem.jid, nmi.data);
+				}
+				else if (nmi.name == "image")
+				{
+					var bmd:BitmapData = BitmapData(nmi.data);
+					var rec:Rectangle = new Rectangle(0, 0, bmd.width, bmd.height);
+					var bytes:ByteArray = bmd.getPixels(rec);
+					var recObj:Object = {"width":rec.width, "height":rec.height, "x":0, "y":0};
+					outgoingItem = new OutgoingItem(OutgoingItem.IMAGE, this.selectedItem.jid, bytes, recObj);
+				}
+				else if (nmi.name == "file")
+				{
+					var targetFile:File = nmi.data as File;
+					var fileBytes:ByteArray = new ByteArray();
+					var fs:FileStream = new FileStream();
+					fs.open(targetFile, FileMode.READ);
+					fs.readBytes(fileBytes);
+					fs.close();
+					
+					outgoingItem = new OutgoingItem(OutgoingItem.FILE, this.selectedItem.jid, fileBytes, targetFile.name);
+				}
+
+				if (outgoingItem != null)
+				{
+					var ml:ModelLocator = ModelLocator.getInstance();
+					var outgoingStream:NetStream = ml.outgoingStream;
+					var targetStream:NetStream;
+					for each (var peerStream:NetStream in outgoingStream.peerStreams)
+					{
+						if (peerStream.farID == this.selectedItem.peerId)
+						{
+							targetStream = peerStream;
+							break;
+						}
+					}
+					if (targetStream == null) return;
+					targetStream.send("onData", ml.preferences.getValue("username"), outgoingItem.getType(), outgoingItem.getItem(), outgoingItem.getArg());
+				}
+			}
+
+		]]>
+	</mx:Script>
+
+	<mx:itemRenderer>
+		<mx:Component>
+			<mx:Label text="{data.displayName}" fontWeight="{(data.pasteable)?'bold':'normal'}"/>
+		</mx:Component>
+	</mx:itemRenderer>
+
+</mx:List>

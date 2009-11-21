@@ -1,0 +1,59 @@
+WindowedApplication 
+{ 
+	background-image: Embed("assets/application_skin.png",
+		scaleGridLeft="1",
+	    scaleGridRight="1060",
+	    scaleGridTop="50",
+	    scaleGridBottom="140");
+    background-size: "100%";
+	font-size: 10px;
+}
+
+Window
+{
+	background-color: #EEEEEE;
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+Button
+{
+	font-size: 10px;
+	padding-left: 6px;
+	padding-right: 6px;
+	
+	up-skin: Embed("assets/button.png",
+	scaleGridLeft="4",
+    scaleGridRight="28",
+    scaleGridTop="4",
+    scaleGridBottom="26");
+    
+    over-skin: Embed("assets/button_over.png",
+	scaleGridLeft="4",
+    scaleGridRight="28",
+    scaleGridTop="4",
+    scaleGridBottom="26");
+    
+    down-skin: Embed("assets/button_down.png",
+	scaleGridLeft="4",
+    scaleGridRight="28",
+    scaleGridTop="4",
+    scaleGridBottom="26");
+    
+    disabled-skin: Embed("assets/button.png",
+	scaleGridLeft="4",
+    scaleGridRight="28",
+    scaleGridTop="4",
+    scaleGridBottom="26");
+}
+
+.logo
+{
+	font-size: 16px;
+	background-alpha: 0;
+	border-style: none;
+	padding: 0px;
+	color: #DF9300;
+	font-weight: bold;
+}
+

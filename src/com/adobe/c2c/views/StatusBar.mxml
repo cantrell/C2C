@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.c2c.model.ModelLocator;
+			
+			[Bindable] [Embed(source="assets/online.png")] private var online:Class;
+			[Bindable] [Embed(source="assets/offline.png")] private var offline:Class;
+			
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%" horizontalGap="4" verticalAlign="middle">
+		<mx:Image source="{(ModelLocator.getInstance().connected) ? online : offline}"/>
+		<mx:Label text="{ModelLocator.getInstance().statusMessage}"/>
+	</mx:HBox>
+</mx:Canvas>

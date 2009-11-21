@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="onCreationComplete();" width="100%" height="100%">
+
+	<mx:Script>
+		<![CDATA[
+			import mx.events.PropertyChangeEvent;
+			import com.adobe.c2c.events.XMPPAddContactEvent;
+			import mx.binding.utils.ChangeWatcher;
+			import com.adobe.c2c.model.ModelLocator;
+		
+			private function onCreationComplete():void
+			{
+				ChangeWatcher.watch(ModelLocator.getInstance(), "showAddUserDrawer", onShowChange);
+			}
+
+			private function onShowChange(e:PropertyChangeEvent):void
+			{
+				var ml:ModelLocator = ModelLocator.getInstance();
+				if (ml.xmppConnection != null && ml.xmppConnection.isActive() && ml.xmppConnection.isLoggedIn())
+				{
+					addUserButton.enabled = true;
+					usernameInput.setFocus();
+				}
+				else
+				{
+					addUserButton.enabled = false;
+				}
+			}			
+			
+			private function addUser():void
+			{
+				var e:XMPPAddContactEvent = new XMPPAddContactEvent();
+				e.username = usernameInput.text;
+				e.dispatch();
+				ModelLocator.getInstance().showAddUserDrawer = false;
+			}
+
+		]]>
+	</mx:Script>
+	
+	<mx:VBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+		<mx:Form id="accountForm">
+			<mx:FormItem label="Username">
+				<mx:TextInput id="usernameInput" width="200" enter="if (addUserButton.enabled) addUser();"/>
+			</mx:FormItem>
+		</mx:Form>
+		<mx:HBox id="buttonBox" width="100%" horizontalAlign="center">
+			<mx:Button id="addUserButton" label="Add User" click="addUser();" enabled="{(usernameInput.text.length &gt; 0)}"/>
+			<mx:Button label="Cancel" click="ModelLocator.getInstance().showAddUserDrawer = false;"/>
+		</mx:HBox>
+	</mx:VBox>
+
+</mx:Canvas>

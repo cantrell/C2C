@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<application xmlns="http://ns.adobe.com/air/application/1.5">
+
+	<id>C2C</id>
+	<filename>C2C</filename>
+	<name>C2C</name>
+	<version>v1</version>
+	<description>Share your clipboard across the network. Written by Christian Cantrell.</description>
+	<!-- <copyright></copyright> -->
+
+	<initialWindow>
+		<content>[This value will be overwritten by Flex Builder in the output app.xml]</content>
+		<title>C2C</title>
+		<systemChrome>standard</systemChrome>
+		<!-- <transparent></transparent> -->
+		<visible>false</visible>
+		<!-- <minimizable></minimizable> -->
+		<!-- <maximizable></maximizable> -->
+		<!-- <resizable></resizable> -->
+		<!-- <width></width> -->
+		<!-- <height></height> -->
+		<!-- <x></x> -->
+		<!-- <y></y> -->
+		<!-- <minSize></minSize> -->
+		<!-- <maxSize></maxSize> -->
+	</initialWindow>
+
+	<!-- <installFolder></installFolder> -->
+	<!-- <programMenuFolder></programMenuFolder> -->
+
+	<!-- The icon the system uses for the application. For at least one resolution,
+		 specify the path to a PNG file included in the AIR package. Optional. -->
+	<!-- <icon>
+		<image16x16></image16x16>
+		<image32x32></image32x32>
+		<image48x48></image48x48>
+		<image128x128></image128x128>
+	</icon> -->
+
+	<!-- <customUpdateUI></customUpdateUI> -->
+	<!-- <allowBrowserInvocation></allowBrowserInvocation> -->
+
+</application>

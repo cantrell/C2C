@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Accordion xmlns:mx="http://www.adobe.com/2006/mxml" creationPolicy="all" selectedIndex="{ModelLocator.getInstance().clipboardContentsIndex}" creationComplete="onCreationComplete();">
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.c2c.vo.OutgoingItem;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import org.jivesoftware.xiff.events.BookmarkChangedEvent;
+			import mx.core.UIComponent;
+			import com.adobe.c2c.model.ModelLocator;
+			import mx.events.PropertyChangeEvent;
+			import mx.binding.utils.ChangeWatcher;
+			
+			private function onCreationComplete():void
+			{
+				ChangeWatcher.watch(ModelLocator.getInstance(), "clipboardBitmap", onBitmapChange);
+			}
+			
+			private function onBitmapChange(e:PropertyChangeEvent):void
+			{
+				if (ModelLocator.getInstance().clipboardBitmap == null)
+				{
+					return;
+				}
+				var bmd:BitmapData = ModelLocator.getInstance().clipboardBitmap as BitmapData;
+				var bm:Bitmap = new Bitmap(bmd);
+				imageDisplay.source = bm;
+			}
+			
+			private function getSize(file:File, col:DataGridColumn):String
+			{
+				var size:Number = file.size;
+				var newSize:Number;
+				var units:String;
+				if (size >= 1073741824) // GB
+				{
+					newSize = size / 1073741824;
+					units = "GB";
+				}
+				else if (size >= 1048576)
+				{
+					newSize = size / 1048576;
+					units = "MB";
+				}
+				else if (size >= 1024)
+				{
+					newSize = size / 1024;
+					units = "KB";
+				}
+				return Math.round(newSize) + units;
+			}
+
+		]]>
+	</mx:Script>
+	<mx:Canvas label="Files" width="100%" height="100%">
+		<mx:DataGrid dataProvider="{ModelLocator.getInstance().clipboardFiles}" width="100%" height="100%">
+			<mx:columns>
+			    <mx:DataGridColumn headerText="Name" textAlign="left" dataField="name" width="210"/>
+			    <mx:DataGridColumn headerText="Size" textAlign="left" dataField="size" labelFunction="getSize"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Canvas>
+	<mx:Canvas label="Text" width="100%" height="100%">
+		<mx:TextArea text="{ModelLocator.getInstance().clipboardText}" width="100%" height="100%" editable="false"/>
+	</mx:Canvas>
+	<mx:Canvas label="Image" width="100%" height="100%">
+		<mx:Box id="imageBox" width="100%" height="100%" verticalAlign="middle" horizontalAlign="center">
+			<mx:Image id="imageDisplay"/>
+		</mx:Box>
+	</mx:Canvas>
+</mx:Accordion>

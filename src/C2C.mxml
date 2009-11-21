@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml"
+						xmlns:views="com.adobe.c2c.views.*"
+						xmlns:local="*"
+						layout="absolute"
+						showStatusBar="false"
+						creationComplete="onCreationComplete();"
+						width="425" height="375">
+
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.c2c.commands.CommandResponder;
+			import com.adobe.c2c.events.CloseConnectionsEvent;
+			import org.jivesoftware.xiff.events.ModelChangedEvent;
+			import com.adobe.c2c.events.ReadClipboardEvent;
+			import com.adobe.c2c.events.XMPPUpdatePresenceEvent;
+			import org.jivesoftware.xiff.core.XMPPSocketConnection;
+			import org.jivesoftware.xiff.data.Presence;
+			import com.adobe.c2c.controller.Controller;
+			import mx.collections.ArrayCollection;
+			import com.adobe.c2c.model.ModelLocator;
+			import com.adobe.c2c.events.InitEvent;
+			import com.adobe.air.preferences.Preference;
+
+			private var controller:Controller;
+			private var keepAliveTimer:Timer;
+			
+			private function onCreationComplete():void
+			{
+				this.controller = new Controller();
+				
+				// Handle idle events.
+				NativeApplication.nativeApplication.idleThreshold = 60 * 15; // 15 minutes
+				NativeApplication.nativeApplication.addEventListener(Event.USER_IDLE, onUserIdle);
+				NativeApplication.nativeApplication.addEventListener(Event.USER_PRESENT, onUserPresent);
+				NativeApplication.nativeApplication.addEventListener(Event.EXITING, onExiting);
+
+				// Handle activation
+				NativeApplication.nativeApplication.addEventListener(Event.ACTIVATE, onActivate);
+				NativeApplication.nativeApplication.addEventListener(Event.DEACTIVATE, onDeactivate);
+
+				// Keep the XMPP connection alive.
+				this.keepAliveTimer = new Timer(60000); // Every minute
+				this.keepAliveTimer.addEventListener(TimerEvent.TIMER,
+					function(e:TimerEvent):void
+					{
+						var ml:ModelLocator = ModelLocator.getInstance();
+						if (ml.xmppConnection != null && ml.xmppConnection.isActive())
+						{
+							ml.xmppConnection.sendKeepAlive();
+						}
+					});
+				this.keepAliveTimer.start();
+				
+				new InitEvent().dispatch();
+			}
+			
+			private function onActivate(e:Event):void
+			{
+				trace("activating");
+				new ReadClipboardEvent().dispatch();
+			}
+
+			private function onDeactivate(e:Event):void
+			{
+				trace("deactivating");
+			}
+
+			private function onExiting(e:Event):void
+			{
+				new CloseConnectionsEvent().dispatch();
+			}
+			
+			private function onUserIdle(e:Event):void
+			{
+				var ee:XMPPUpdatePresenceEvent = new XMPPUpdatePresenceEvent();
+				ee.presence = Presence.SHOW_AWAY;
+				ee.dispatch();
+			}
+
+			private function onUserPresent(e:Event):void
+			{
+				var ee:XMPPUpdatePresenceEvent = new XMPPUpdatePresenceEvent();
+				ee.presence = null;
+				ee.dispatch();
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:Style source="styles.css"/>
+	
+	<mx:VBox width="100%" height="100%" paddingTop="4" paddingBottom="4" paddingLeft="4" paddingRight="4">
+		<mx:HBox width="100%" verticalAlign="middle">
+			<mx:HBox horizontalAlign="center">
+				<mx:Label text="Clipboard-2-Clipboard" styleName="logo" filters="{[new DropShadowFilter(2, 45, 0, .25)]}"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="Add Contact" click="ModelLocator.getInstance().showAddUserDrawer = true"/>
+				<mx:Button label="Manage Account" click="ModelLocator.getInstance().showAccountDrawer = true"/>
+			</mx:HBox>
+		</mx:HBox>
+		<mx:HBox width="100%" height="100%">
+			<views:RosterList id="rosterList" dataProvider="{ModelLocator.getInstance().roster}" width="30%" height="100%"/>
+			<mx:VBox width="70%" height="100%" borderStyle="inset" paddingTop="4" paddingBottom="4" paddingLeft="4" paddingRight="4">
+				<mx:Label text="Clipboard Contents" textAlign="center" width="100%" fontWeight="bold"/>
+				<views:ClipboardContents width="100%" height="100%"/>
+			</mx:VBox>
+		</mx:HBox>
+		<views:StatusBar width="100%"/>
+	</mx:VBox>
+	<views:TopDrawer isOpen="{ModelLocator.getInstance().showAccountDrawer}" width="365" height="240">
+		<views:AccountManager/>
+	</views:TopDrawer>
+	<views:TopDrawer isOpen="{ModelLocator.getInstance().showAddUserDrawer}" width="350" height="100">
+		<views:AddUser/>
+	</views:TopDrawer>
+</mx:WindowedApplication>
