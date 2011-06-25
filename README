@@ -1,3 +1,7 @@
 A peer-to-peer application that lets you share the contents of your clipboard.
 
+This project has the following dependencies:
+
+http://code.google.com/p/as3preferenceslib/
+
 Written by Christian Cantrell.
