@@ -15,10 +15,10 @@ package com.adobe.c2c.model
 	{
 		protected static var inst:ModelLocator;
 
-		public static const XMPP_HOST:String = "";
+		public static const XMPP_HOST:String = "christiancantrell.com";
 		public static const XMPP_PORT:uint = 5222;
 		public static const XMPP_RESOURCE:String = "c2c";
-		public static const FMS_SERVER:String = "";
+		public static const FMS_SERVER:String = "rtmfp://stratus.adobe.com/HawkPrerelease-4e4efa13755c/ccantrel.adobe.com";
 		public static const PEERID_QUERY_NS:String = "c2c:peerid";
 
 		[Bindable] public var xmppConnection:XMPPSocketConnection;
